@@ -20,12 +20,32 @@
 演示代码
 ```java
     import com.github.xengine.core.*;
-    import com.github.xengine.demo.rule.*;
+    import lombok.Data;
+    import lombok.experimental.Accessors;
     import org.junit.Test;
     import java.util.concurrent.*;
-
+    
     public class Demo {
-
+    
+        @Data
+        @Accessors(chain = true)
+        public class MockRule implements XRule<MyRuleContent> {
+    
+            //规则执行时间
+            private long executeMS;
+    
+            //规则名
+            private String name;
+    
+            @Override
+            public void execute(MyRuleContent myRuleContent) throws Exception {
+                if (executeMS > 0){
+                    //模拟规则执行
+                    Thread.sleep(executeMS);
+                }
+            }
+        }
+    
         @Test
         public void run()
         {
@@ -37,11 +57,11 @@
             XNode<MyRuleContent> endNode = new XNode<>(new EmptyXRule<>("结束"));
     
             //初始化规则对象
-            XNode<MyRuleContent> rule1 = new XNode(new Rule1().setExecuteMS(100));
-            XNode<MyRuleContent> rule2 = new XNode(new Rule2().setExecuteMS(200));
-            XNode<MyRuleContent> rule3 = new XNode(new Rule3().setExecuteMS(100));
-            XNode<MyRuleContent> rule4 = new XNode(new Rule4().setExecuteMS(200));
-            XNode<MyRuleContent> rule5 = new XNode(new Rule5().setExecuteMS(100));
+            XNode<MyRuleContent> rule1 = new XNode(new MockRule().setName("1").setExecuteMS(100));
+            XNode<MyRuleContent> rule2 = new XNode(new MockRule().setName("2").setExecuteMS(200));
+            XNode<MyRuleContent> rule3 = new XNode(new MockRule().setName("3").setExecuteMS(100));
+            XNode<MyRuleContent> rule4 = new XNode(new MockRule().setName("4").setExecuteMS(200));
+            XNode<MyRuleContent> rule5 = new XNode(new MockRule().setName("5").setExecuteMS(100));
     
             //编辑规则相对执行顺序
             startNode.addPostNode(rule1);
@@ -59,8 +79,8 @@
                 throw new RuntimeException(e);
             }
         }
-        
-    }    
+    
+    }
 ```
 
 日志
