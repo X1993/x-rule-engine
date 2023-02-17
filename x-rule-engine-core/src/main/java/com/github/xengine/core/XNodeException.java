@@ -5,7 +5,7 @@ package com.github.xengine.core;
  * 1.起始节点有且只能有一个
  * 2.终止节点有且只能有一个
  * 3.节点之间不能构成环
- * @author wangjj7
+ * @author X1993
  * @date 2023/2/14
  * @description
  */

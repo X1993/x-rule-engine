@@ -6,7 +6,7 @@ import java.util.concurrent.Future;
 
 /**
  * 基于线程池实现异步规则执行器
- * @author wangjj7
+ * @author X1993
  * @date 2023/2/10
  * @description
  */
@@ -20,29 +20,25 @@ public class ExecutorServiceXRuleExecutor implements XRuleExecutor {
     }
 
     @Override
-    public <CONTENT extends XRuleContent<CONTENT>> Future<CONTENT> async(
-            XRule<CONTENT> xRule, CONTENT inputRuleContent, Callback<CONTENT> callback)
+    public <CONTENT extends XRuleContent> Future exe(XRule<CONTENT> xRule, CONTENT content, Callback callback)
     {
-        return executorService.submit(() -> execute(xRule , inputRuleContent,callback));
+        return executorService.submit(() -> execute(xRule ,content ,callback));
     }
 
-    private <CONTENT extends XRuleContent<CONTENT>> CONTENT execute(
-            XRule<CONTENT> xRule, CONTENT ruleContent ,Callback<CONTENT> callback)
+    private <CONTENT extends XRuleContent> void execute(XRule<CONTENT> xRule, CONTENT content, Callback callback)
     {
-        if (callback != null && !callback.preExe(ruleContent)){
-            return ruleContent;
+        if (callback != null && !callback.preExe()){
+            return;
         }
-        CONTENT outputRuleContent = ruleContent;
         Exception exception = null;
         try {
-            outputRuleContent = xRule.execute(ruleContent);
+            xRule.execute(content);
         } catch (Exception e) {
             exception = e;
         } finally {
             if (callback != null) {
-                callback.postExe(exception, outputRuleContent);
+                callback.postExe(exception);
             }
-            return outputRuleContent;
         }
     }
 

@@ -10,29 +10,29 @@ import java.util.concurrent.Future;
 
 /**
  * 节点上下文，定义规则的依赖关系和执行状态
- * @author wangjj7
+ * @author X1993
  * @date 2023/2/10
  * @description
  */
 @Data
 @Accessors(chain = true)
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class XNodeContent<CONTENT extends XRuleContent<CONTENT>> implements Cloneable {
+public class XNodeContent {
 
     /**
-     * 规则执行开始时间
+     * 规则执行的开始时间
      */
     LocalDateTime startTime;
 
     /**
-     * 规则执行结束时间
+     * 规则执行的结束时间
      */
     LocalDateTime endTime;
 
     /**
      * 规则状态
      */
-    XRuleStatus ruleStatus;
+    XRuleStatus ruleStatus = XRuleStatus.WAIT;
 
     /**
      * 规则执行异常
@@ -40,19 +40,9 @@ public class XNodeContent<CONTENT extends XRuleContent<CONTENT>> implements Clon
     Exception exception;
 
     /**
-     * 输入的规则上下文
-     */
-    CONTENT inputRuleContent;
-
-    /**
-     * 输出的规则上下文
-     */
-    CONTENT outputRuleContent;
-
-    /**
      * 规则提交后的Future
      */
-    Future<CONTENT> ruleFuture;
+    Future ruleFuture;
 
     /**
      * 规则执行时间
@@ -60,17 +50,6 @@ public class XNodeContent<CONTENT extends XRuleContent<CONTENT>> implements Clon
      */
     public long getDuration(ChronoUnit chronoUnit){
         return startTime.until(endTime == null ? LocalDateTime.now() : endTime ,chronoUnit);
-    }
-
-    @Override
-    public XNodeContent<CONTENT> clone(){
-        XNodeContent<CONTENT> clone = null;
-        try {
-            clone = (XNodeContent<CONTENT>) super.clone();
-        } catch (CloneNotSupportedException e) {
-            throw new IllegalStateException();
-        }
-        return clone;
     }
 
 }

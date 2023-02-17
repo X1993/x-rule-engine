@@ -2,22 +2,24 @@ package com.github.xengine.core;
 
 /**
  * 规则
- * @author wangjj7
+ * @author X1993
  * @date 2023/2/10
  * @description
  */
-public interface XRule<CONTENT extends XRuleContent<CONTENT>> {
+public interface XRule<CONTENT extends XRuleContent> {
 
     /**
      * 规则名称
      * @return
      */
-    String name();
+    default String name(){
+        return toString();
+    }
 
     /**
      * 执行规则
      * @param content
      */
-    CONTENT execute(CONTENT content) throws Exception;
+    void execute(CONTENT content) throws Exception;
 
 }

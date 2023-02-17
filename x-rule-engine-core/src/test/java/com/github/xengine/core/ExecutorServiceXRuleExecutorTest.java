@@ -4,28 +4,23 @@ import com.github.xengine.core.mock.*;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.Assert;
 import org.junit.Test;
-import java.util.List;
+
 import java.util.concurrent.*;
 import java.util.stream.IntStream;
 
 /**
- * @author wangjj7
+ * @author X1993
  * @date 2023/2/14
  * @description
  */
 @Slf4j
 public class ExecutorServiceXRuleExecutorTest {
-    
-    @Test
-    public void executeTest(){
-        executeTest(new MockRuleContent().setGlobal(true));
-        executeTest(new MockRuleContent().setGlobal(false));
-    }
 
-    private void executeTest(MockRuleContent ruleContent) {
+    @Test
+    public void executeTest() {
         XNodeExecutor nodeExecutor = new DefaultXNodeExecutor(
                 new ExecutorServiceXRuleExecutor(new ThreadPoolExecutor(
-                        3 , 3 ,60L ,
+                        3 ,3 ,60L ,
                         TimeUnit.SECONDS ,new ArrayBlockingQueue<>(1000))));
 
         XNode<MockRuleContent> startNode = new XNode<>(new EmptyXRule<MockRuleContent>("启始节点"));
@@ -48,7 +43,7 @@ public class ExecutorServiceXRuleExecutorTest {
 
         //测试执行顺序及执行结果
         log.debug("---------------测试执行顺序及执行结果 start--------------");
-        Future<MockRuleContent> future = nodeExecutor.execute(startNode, ruleContent);
+        Future<MockRuleContent> future = nodeExecutor.exe(startNode, new MockRuleContent().setFold(3));
         MockRuleContent mockRuleContent = null;
 
         long startTimestamp = System.currentTimeMillis();
@@ -64,24 +59,18 @@ public class ExecutorServiceXRuleExecutorTest {
 
         XNodeValidationUtils.exeSequence(startNode);
 
-        List<MockRuleResult> results = mockRuleContent.getResults();
-        Assert.assertTrue(IntStream.of(node0_0Num ,node1_0Num ,node2_0Num ,node0_1Num).sum()
-                == results.stream().mapToInt(MockRuleResult::getResult).sum());
+        Assert.assertTrue(3 * IntStream.of(node0_0Num ,node1_0Num ,node2_0Num ,node0_1Num).sum()
+                == mockRuleContent.getSum().get());
 
         log.debug("---------------测试执行顺序及执行结果 end--------------");
     }
 
     @Test
-    public void exceptionNodeTest() throws InterruptedException {
-        exceptionNodeTest(new MockRuleContent().setGlobal(true));
-        exceptionNodeTest(new MockRuleContent().setGlobal(false));
-    }
-
-    private void exceptionNodeTest(MockRuleContent ruleContent) throws InterruptedException
+    public void exceptionNodeTest() throws InterruptedException
     {
         XNodeExecutor nodeExecutor = new DefaultXNodeExecutor(
                 new ExecutorServiceXRuleExecutor(new ThreadPoolExecutor(
-                        4 , 4 ,60L ,
+                        4 ,4 ,60L ,
                         TimeUnit.SECONDS ,new ArrayBlockingQueue<>(1000))));
 
         XNode<MockRuleContent> startNode = new XNode<>(new EmptyXRule<MockRuleContent>("启始节点"));
@@ -107,7 +96,7 @@ public class ExecutorServiceXRuleExecutorTest {
         startNode.addPostNode(exceptionNode);
         exceptionNode.addPostNode(endNode);
 
-        Future<MockRuleContent> future1 = nodeExecutor.execute(startNode, ruleContent);
+        Future<MockRuleContent> future1 = nodeExecutor.exe(startNode, new MockRuleContent());
         boolean exception = false;
         try {
             future1.get();
@@ -118,10 +107,10 @@ public class ExecutorServiceXRuleExecutorTest {
         }
         Assert.assertTrue(exception);
 
-        Assert.assertTrue(node0_0.getNodeContent().getRuleStatus() == XRuleStatus.COMPLETE);
-        Assert.assertTrue(exceptionNode.getNodeContent().getRuleStatus() == XRuleStatus.EXCEPTION);
-        Assert.assertTrue(endNode.getNodeContent().getRuleStatus() == XRuleStatus.WAIT);
-        Assert.assertTrue(startNode.getNodeContent().getRuleStatus() == XRuleStatus.COMPLETE);
+        Assert.assertTrue(node0_0.getRuleStatus() == XRuleStatus.COMPLETE);
+        Assert.assertTrue(exceptionNode.getRuleStatus() == XRuleStatus.EXCEPTION);
+        Assert.assertTrue(endNode.getRuleStatus() == XRuleStatus.WAIT);
+        Assert.assertTrue(startNode.getRuleStatus() == XRuleStatus.COMPLETE);
 
         XNodeValidationUtils.exeSequence(startNode);
 

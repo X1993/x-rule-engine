@@ -1,8 +1,6 @@
 package com.github.xengine.core;
 
 import lombok.AccessLevel;
-import lombok.Data;
-import lombok.experimental.Accessors;
 import lombok.experimental.FieldDefaults;
 import java.text.MessageFormat;
 import java.time.LocalDateTime;
@@ -13,14 +11,12 @@ import java.util.stream.Collectors;
 
 /**
  * 规则节点
- * @author wangjj7
+ * @author X1993
  * @date 2023/2/10
  * @description
  */
-@Data
-@Accessors(chain = true)
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class XNode<CONTENT extends XRuleContent<CONTENT>> {
+public class XNode<CONTENT extends XRuleContent> {
 
     /**
      * 规则
@@ -41,7 +37,8 @@ public class XNode<CONTENT extends XRuleContent<CONTENT>> {
      * 节点上下文
      * 由于节点的执行支持并行，非幂等操作需要确保线程安全
      */
-    final XNodeContent<CONTENT> nodeContent = new XNodeContent<CONTENT>().setRuleStatus(XRuleStatus.WAIT);
+    final XNodeContent nodeContent = new XNodeContent().setRuleStatus(XRuleStatus.WAIT);
+
 
     public XNode(XRule<CONTENT> rule) {
         this.rule = rule;
@@ -82,46 +79,6 @@ public class XNode<CONTENT extends XRuleContent<CONTENT>> {
     }
 
     /**
-     * 获取规则输入上下文
-     * @return
-     */
-    public CONTENT getInputRuleContent(){
-        return nodeContent.getInputRuleContent();
-    }
-
-    /**
-     * 获取规则输出上下文
-     * @return
-     */
-    public CONTENT getOutputRuleContent(){
-        return nodeContent.getOutputRuleContent();
-    }
-
-    /**
-     * 合并前置节点的规则输出的上下文
-     * @param preOutputRuleContent
-     * @return
-     */
-    public CONTENT mergePreOutput(CONTENT preOutputRuleContent){
-        if (preOutputRuleContent == null){
-            throw new IllegalArgumentException("规则上下文不能为空");
-        }
-        synchronized (nodeContent) {
-            CONTENT currentInputRuleContent = getInputRuleContent();
-            if (currentInputRuleContent == null){
-                nodeContent.setInputRuleContent(preOutputRuleContent.create());
-            }
-            if (currentInputRuleContent == preOutputRuleContent){
-                return currentInputRuleContent;
-            }
-            currentInputRuleContent = getInputRuleContent();
-            CONTENT mergeInputRuleContent = currentInputRuleContent.merge(preOutputRuleContent);
-            nodeContent.setInputRuleContent(mergeInputRuleContent);
-            return mergeInputRuleContent;
-        }
-    }
-
-    /**
      * 规则就绪
      * @return
      */
@@ -153,17 +110,17 @@ public class XNode<CONTENT extends XRuleContent<CONTENT>> {
         }
     }
 
-    public boolean complete(CONTENT outputRuleContent){
-        return end(XRuleStatus.COMPLETE ,null ,outputRuleContent);
+    public boolean complete(){
+        return end(XRuleStatus.COMPLETE ,null);
     }
 
     public boolean intercept(){
-        return end(XRuleStatus.INTERCEPT ,null ,null);
+        return end(XRuleStatus.INTERCEPT ,null);
     }
 
     public boolean exception(Exception e ,boolean cancelIfUndone){
-        boolean result = end(XRuleStatus.EXCEPTION, e, null);
-        if (result){
+        boolean result = end(XRuleStatus.EXCEPTION, e);
+        if (result && cancelIfUndone){
             cancelIfUndone();
         }
         return result;
@@ -171,9 +128,9 @@ public class XNode<CONTENT extends XRuleContent<CONTENT>> {
 
     private void cancelIfUndone(){
         //如果有进行中的规则发送中断通知
-        List<XNode<CONTENT>> nodes = reachableNodes(true, true);
+        List<XNode<CONTENT>> nodes = getReachableNodes(true, true);
         for (XNode<CONTENT> xNode : nodes) {
-            Future<CONTENT> ruleFuture = xNode.getNodeContent().getRuleFuture();
+            Future ruleFuture = nodeContent.getRuleFuture();
             if (ruleFuture != null && !ruleFuture.isDone()){
                 //                            log.debug("中断规则【{}】" ,xNode.getRule().name());
                 ruleFuture.cancel(true);
@@ -182,39 +139,34 @@ public class XNode<CONTENT extends XRuleContent<CONTENT>> {
     }
 
     public boolean cancel(){
-        return end(XRuleStatus.CANCEL ,null ,null);
+        return end(XRuleStatus.CANCEL ,null);
     }
 
     //规则执行结束
-    private boolean end(XRuleStatus finalRuleStatus ,Exception e ,CONTENT outputRuleContent)
+    private boolean end(XRuleStatus finalRuleStatus ,Exception e)
     {
         if (!finalRuleStatus.isFinal()){
             throw new IllegalArgumentException(MessageFormat.format("{}不能作为规则的终止状态" ,finalRuleStatus));
         }
-        synchronized (nodeContent) {
-            if (!getRuleStatus().isFinal()) {
-                nodeContent.setRuleStatus(finalRuleStatus);
-                nodeContent.setException(e);
-                nodeContent.setEndTime(LocalDateTime.now());
-                if (outputRuleContent != null) {
-                    nodeContent.setOutputRuleContent(outputRuleContent);
-                }
-                return true;
-            }
+        if (getRuleStatus().isFinal()){
             return false;
+        }
+        synchronized (nodeContent) {
+            if (getRuleStatus().isFinal()) {
+                return false;
+            }
+            nodeContent.setRuleStatus(finalRuleStatus);
+            nodeContent.setException(e);
+            nodeContent.setEndTime(LocalDateTime.now());
+            return true;
         }
     }
 
-    public XNode<CONTENT> setRuleFuture(Future<CONTENT> ruleFuture){
+    public XNode<CONTENT> setRuleFuture(Future<Void> ruleFuture){
         if (nodeContent.getRuleFuture() == null){
             nodeContent.setRuleFuture(ruleFuture);
         }
         return this;
-    }
-
-    //只读，不要在外部修改
-    public XNodeContent<CONTENT> getNodeContent() {
-        return nodeContent;
     }
 
     /**
@@ -256,10 +208,12 @@ public class XNode<CONTENT extends XRuleContent<CONTENT>> {
     }
 
     /**
-     * 返回所有可达的节点
+     * 返回可达的节点
+     * @param containPre 是否向前遍历
+     * @param containPost 是否向后遍历
      * @return
      */
-    public List<XNode<CONTENT>> reachableNodes(boolean containPre ,boolean containPost)
+    public List<XNode<CONTENT>> getReachableNodes(boolean containPre ,boolean containPost)
     {
         List<XNode<CONTENT>> nodes = new ArrayList<>();
         Set<XNode<CONTENT>> markedNodes = new HashSet<>();
@@ -304,6 +258,26 @@ public class XNode<CONTENT extends XRuleContent<CONTENT>> {
                 ", postNodes=" + postNodes.stream().map(node -> node.getRule().name()).collect(Collectors.toList()) +
                 ", nodeContent=" + nodeContent.toString() +
                 '}';
+    }
+
+    public XRule<CONTENT> getRule() {
+        return rule;
+    }
+
+    public Set<XNode<CONTENT>> getPreNodes() {
+        return preNodes;
+    }
+
+    public Set<XNode<CONTENT>> getPostNodes() {
+        return postNodes;
+    }
+
+    public LocalDateTime getStartTime(){
+        return nodeContent.getStartTime();
+    }
+
+    public LocalDateTime getEndTime(){
+        return nodeContent.getEndTime();
     }
 
 }

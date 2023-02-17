@@ -4,7 +4,7 @@ import com.github.xengine.core.mock.MockRuleContent;
 import org.junit.Assert;
 
 /**
- * @author wangjj7
+ * @author X1993
  * @date 2023/2/14
  * @description
  */
@@ -15,7 +15,7 @@ public class XNodeValidationUtils {
             if (!postNode.getRuleStatus().isFinal()){
                 continue;
             }
-            Assert.assertFalse(xNode.getNodeContent().getEndTime().isAfter(postNode.getNodeContent().getStartTime()));
+            Assert.assertFalse(xNode.getEndTime().isAfter(postNode.getStartTime()));
             exeSequence(postNode);
         }
     }

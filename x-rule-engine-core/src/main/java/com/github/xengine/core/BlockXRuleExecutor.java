@@ -5,32 +5,32 @@ import java.util.concurrent.Future;
 
 /**
  * 阻塞式同步规则执行器
- * @author wangjj7
+ * @author X1993
  * @date 2023/2/14
  * @description
  */
 public class BlockXRuleExecutor implements XRuleExecutor {
 
     @Override
-    public <CONTENT extends XRuleContent<CONTENT>> Future async(XRule<CONTENT> xRule, CONTENT inputRuleContent, Callback<CONTENT> callback) {
+    public <CONTENT extends XRuleContent> Future exe(XRule<CONTENT> xRule ,CONTENT content ,Callback callback)
+    {
         CompletableFuture<CONTENT> future = new CompletableFuture<>();
 
-        if (callback != null && !callback.preExe(inputRuleContent)){
+        if (callback != null && !callback.preExe()){
             future.cancel(false);
             return future;
         }
 
-        CONTENT outputRuleContent = inputRuleContent;
         Exception exception = null;
         try {
-            outputRuleContent = xRule.execute(inputRuleContent);
-            future.complete(outputRuleContent == null ? inputRuleContent : outputRuleContent);
+            xRule.execute(content);
+            future.complete(content);
         } catch (Exception e) {
             exception = e;
             future.completeExceptionally(e);
         } finally {
             if (callback != null) {
-                callback.postExe(exception, outputRuleContent);
+                callback.postExe(exception);
             }
             return future;
         }

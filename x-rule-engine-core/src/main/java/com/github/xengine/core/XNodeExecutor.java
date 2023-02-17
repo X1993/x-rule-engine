@@ -4,27 +4,18 @@ import java.util.concurrent.Future;
 
 /**
  * 节点执行器
- * @author wangjj7
+ * @author X1993
  * @date 2023/2/10
  * @description
  */
 public interface XNodeExecutor {
 
     /**
-     * 执行
+     * 执行规则链
      * @param startNode
-     * @param content
+     * @param ruleContent
      * @return
      */
-    <CONTENT extends XRuleContent<CONTENT>> Future<CONTENT> execute(XNode<CONTENT> startNode ,CONTENT content);
-
-    /**
-     * 执行
-     * @param startNode
-     * @return
-     */
-    default <CONTENT extends XRuleContent<CONTENT>> Future<CONTENT> execute(XNode<CONTENT> startNode){
-        return execute(startNode ,startNode.getInputRuleContent());
-    }
+    <CONTENT extends XRuleContent> Future<CONTENT> exe(XNode<CONTENT> startNode , CONTENT ruleContent);
 
 }

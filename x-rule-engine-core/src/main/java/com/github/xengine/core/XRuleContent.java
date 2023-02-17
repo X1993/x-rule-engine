@@ -1,26 +1,11 @@
 package com.github.xengine.core;
 
 /**
- * 规则上下文，保存规则的输入，输出和全局变量
- * 如果存在并发规则，需要确保上下文线程安全
- * @author wangjj7
- * @param <CHILD> 子类型
+ * 规则上下文，用于整个规则链执行过程中的数据传递和结果保存，如果有规则并行的场景需要确保并发操作安全
+ * @author X1993
  * @date 2023/2/10
  * @description
  */
-public interface XRuleContent<CHILD extends XRuleContent<CHILD>> {
-
-    /**
-     * 创建一个新的规则上下文
-     * @return
-     */
-    CHILD create();
-
-    /**
-     * 聚合规则的上下文
-     * @param ruleContent
-     * @return
-     */
-    CHILD merge(CHILD ruleContent);
+public interface XRuleContent {
 
 }

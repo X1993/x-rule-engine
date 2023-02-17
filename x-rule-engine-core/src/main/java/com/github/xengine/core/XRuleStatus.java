@@ -2,7 +2,7 @@ package com.github.xengine.core;
 
 /**
  * 规则执行状态
- * @author wangjj7
+ * @author X1993
  * @date 2023/2/10
  * @description
  */

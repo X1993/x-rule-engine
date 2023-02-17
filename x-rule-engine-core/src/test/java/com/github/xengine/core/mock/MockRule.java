@@ -6,7 +6,7 @@ import lombok.experimental.Accessors;
 
 /**
  * 模拟规则
- * @author wangjj7
+ * @author X1993
  * @date 2023/2/10
  * @description
  */
@@ -45,15 +45,14 @@ public class MockRule implements XRule<MockRuleContent> {
     }
 
     @Override
-    public MockRuleContent execute(MockRuleContent content) throws Exception {
+    public void execute(MockRuleContent content) throws Exception {
         if (executeMS > 0){
             Thread.sleep(executeMS);
         }
         if (exception){
             throw new Exception("模拟异常");
         }
-        content.addResult(new MockRuleResult().setRuleName(name).setResult(ruleResult));
-        return content;
+        content.add(ruleResult * content.getFold());
     }
 
 }

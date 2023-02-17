@@ -4,11 +4,10 @@ import com.github.xengine.core.mock.*;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.Assert;
 import org.junit.Test;
-import java.util.List;
 import java.util.concurrent.*;
 
 /**
- * @author wangjj7
+ * @author X1993
  * @date 2023/2/14
  * @description
  */
@@ -16,12 +15,8 @@ import java.util.concurrent.*;
 public class BlockXRuleExecutorTest {
 
     @Test
-    public void executeTest(){
-        executeTest(new MockRuleContent().setGlobal(true));
-        executeTest(new MockRuleContent().setGlobal(false));
-    }
-
-    private void executeTest(MockRuleContent ruleContent) {
+    public void executeTest()
+    {
         XNodeExecutor nodeExecutor = new DefaultXNodeExecutor(new BlockXRuleExecutor());
 
         XNode<MockRuleContent> startNode = new XNode<MockRuleContent>(new EmptyXRule<>("启始节点"));
@@ -46,7 +41,7 @@ public class BlockXRuleExecutorTest {
         log.debug("---------------测试执行顺序及执行结果 start--------------");
         long startTimestamp = System.currentTimeMillis();
 
-        Future<MockRuleContent> future = nodeExecutor.execute(startNode, ruleContent);
+        Future<MockRuleContent> future = nodeExecutor.exe(startNode, new MockRuleContent().setFold(3));
         MockRuleContent resultRuleContent = null;
         try {
             resultRuleContent = future.get();
@@ -60,8 +55,7 @@ public class BlockXRuleExecutorTest {
 
         XNodeValidationUtils.exeSequence(startNode);
 
-        List<MockRuleResult> results = resultRuleContent.getResults();
-        Assert.assertTrue(10 == results.stream().mapToInt(MockRuleResult::getResult).sum());
+        Assert.assertTrue(30 == resultRuleContent.getSum().get());
 
         log.debug("---------------测试执行顺序及执行结果 end--------------");
     }

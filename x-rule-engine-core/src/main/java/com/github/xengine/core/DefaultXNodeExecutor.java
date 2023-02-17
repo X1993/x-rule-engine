@@ -2,14 +2,13 @@ package com.github.xengine.core;
 
 import lombok.extern.slf4j.Slf4j;
 import java.time.temporal.ChronoUnit;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
 
 /**
  * 默认的规则节点执行器
- * @author wangjj7
+ * @author X1993
  * @date 2023/2/10
  * @description
  */
@@ -23,30 +22,19 @@ public class DefaultXNodeExecutor implements XNodeExecutor {
     }
 
     @Override
-    public <CONTENT extends XRuleContent<CONTENT>> Future<CONTENT> execute(XNode<CONTENT> startNode, CONTENT content)
+    public <CONTENT extends XRuleContent> Future<CONTENT> exe(XNode<CONTENT> startNode, CONTENT ruleContent)
     {
-        validation(startNode);
-        startNode.mergePreOutput(content);
+        if (ruleContent == null){
+            throw new IllegalArgumentException("任务上下文不能为空");
+        }
+        XNodeUtils.validationStartNode(startNode);
         CompletableFuture<CONTENT> future = new CompletableFuture<>();
-        tryRunNode(startNode ,future);
+        tryRunNode(startNode ,ruleContent,future);
         return future;
     }
 
-    private <CONTENT extends XRuleContent<CONTENT>> void validation(XNode<CONTENT> startNode){
-        if (!startNode.isStartNode()){
-            throw new XNodeException("起始节点不能有前置节点");
-        }
-        List<XNode<CONTENT>> nodes = startNode.reachableNodes(false ,true);
-        if (nodes.stream().filter(XNode::isStartNode).count() != 1){
-            throw new XNodeException("起始节点有且只能有一个");
-        }
-        if (nodes.stream().filter(XNode::isTerminationNode).count() != 1){
-            throw new XNodeException("终止节点有且只能有一个");
-        }
-        //终止节点只允许有一个
-    }
-
-    private <CONTENT extends XRuleContent<CONTENT>> void tryRunNode(XNode<CONTENT> xNode ,CompletableFuture<CONTENT> future)
+    private <CONTENT extends XRuleContent> void tryRunNode(
+            XNode<CONTENT> xNode ,CONTENT content ,CompletableFuture<CONTENT> future)
     {
         int undonePreNodeCount = xNode.preNodeUndoneCount();
         if (undonePreNodeCount > 0) {
@@ -59,26 +47,18 @@ public class DefaultXNodeExecutor implements XNodeExecutor {
         }
 
         if (!xNode.ready()){
-            //确保每个节点只被提交一次
+            //避免重复执行
             return;
-        }
-
-        Set<XNode<CONTENT>> preNodes = xNode.getPreNodes();
-        for (XNode<CONTENT> preNode : preNodes) {
-            //将前置节点输出上下文合并到当前节点的输入上下文
-            xNode.mergePreOutput(preNode.getOutputRuleContent());
         }
 
         String ruleName = xNode.getRule().name();
         log.debug("规则【{}】已就绪，等待执行" ,ruleName);
-
-        final CONTENT inputRuleContent = xNode.getInputRuleContent();
         
-        Future<CONTENT> ruleFuture = xRuleExecutor.async(xNode.getRule(), inputRuleContent.create(),
-                new XRuleExecutor.Callback<CONTENT>() {
+        Future<Void> ruleFuture = xRuleExecutor.exe(xNode.getRule(), content,
+                new XRuleExecutor.Callback() {
 
                     @Override
-                    public boolean preExe(CONTENT inputRuleContent) {
+                    public boolean preExe() {
                         if (future.isCompletedExceptionally()) {
                             if (xNode.cancel()) {
                                 log.debug("任务异常，取消当前规则【{}】的执行", ruleName);
@@ -92,7 +72,7 @@ public class DefaultXNodeExecutor implements XNodeExecutor {
                     }
 
                     @Override
-                    public void postExe(Exception e, CONTENT outputRuleContent)
+                    public void postExe(Exception e)
                     {
                         long durationMS = xNode.getDuration(ChronoUnit.MILLIS);
 
@@ -111,16 +91,11 @@ public class DefaultXNodeExecutor implements XNodeExecutor {
                             return;
                         }
 
-                        if (outputRuleContent == null) {
-                            log.warn("规则输出的上下文不建议返回null，默认取输入上下文");
-                            outputRuleContent = inputRuleContent;
-                        }
-
-                        if (xNode.complete(outputRuleContent)){
+                        if (xNode.complete()){
                             log.debug("规则【{}】执行成功，耗时{}毫秒", ruleName, durationMS);
 
                             if (xNode.isTerminationNode()) {
-                                future.complete(xNode.getOutputRuleContent());
+                                future.complete(content);
                                 return;
                             }
                         }
@@ -129,7 +104,7 @@ public class DefaultXNodeExecutor implements XNodeExecutor {
 
                         for (XNode postNode : postNodes) {
                             //执行可执行的后置节点
-                            tryRunNode(postNode, future);
+                            tryRunNode(postNode ,content ,future);
                         }
                     }
                 });
