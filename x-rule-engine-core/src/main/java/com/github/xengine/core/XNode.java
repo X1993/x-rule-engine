@@ -37,7 +37,7 @@ public class XNode<CONTENT extends XRuleContent> {
      * 节点上下文
      * 由于节点的执行支持并行，非幂等操作需要确保线程安全
      */
-    final XNodeContent nodeContent = new XNodeContent().setRuleStatus(XRuleStatus.WAIT);
+    final XNodeContent nodeContent = new XNodeContent();
 
 
     public XNode(XRule<CONTENT> rule) {
