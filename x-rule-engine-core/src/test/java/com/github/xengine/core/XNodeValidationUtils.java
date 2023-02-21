@@ -10,13 +10,13 @@ import org.junit.Assert;
  */
 public class XNodeValidationUtils {
 
-    public static void exeSequence(XNode<? extends MockRuleContent> xNode){
+    public static void validationSequence(XNode<? extends MockRuleContent> xNode){
         for (XNode<? extends MockRuleContent> postNode : xNode.getPostNodes()) {
             if (!postNode.getRuleStatus().isFinal()){
                 continue;
             }
             Assert.assertFalse(xNode.getEndTime().isAfter(postNode.getStartTime()));
-            exeSequence(postNode);
+            validationSequence(postNode);
         }
     }
 

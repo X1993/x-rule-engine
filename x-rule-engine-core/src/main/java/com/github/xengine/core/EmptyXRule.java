@@ -8,7 +8,10 @@ package com.github.xengine.core;
  */
 public class EmptyXRule<CONTENT extends XRuleContent> implements XRule<CONTENT>{
 
-    private final String name;
+    private String name;
+
+    public EmptyXRule() {
+    }
 
     public EmptyXRule(String name) {
         this.name = name;
@@ -16,6 +19,9 @@ public class EmptyXRule<CONTENT extends XRuleContent> implements XRule<CONTENT>{
 
     @Override
     public String name() {
+        if (name == null || "".equals(name)){
+            return toString();
+        }
         return name;
     }
 

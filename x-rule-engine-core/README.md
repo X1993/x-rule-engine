@@ -21,7 +21,12 @@
     import java.util.concurrent.*;
     
     public class Demo {
-    
+
+        //自定义规则上下文
+        @Data
+        class MyRuleContent implements XRuleContent{}
+
+        //自定义规则
         @Data
         @Accessors(chain = true)
         public class MockRule implements XRule<MyRuleContent> {
@@ -31,6 +36,11 @@
     
             //规则名
             private String name;
+
+            @Override
+            public String name() {
+                return name;
+            }
     
             @Override
             public void execute(MyRuleContent myRuleContent) throws Exception {
@@ -48,8 +58,8 @@
                     new ExecutorServiceXRuleExecutor(new ThreadPoolExecutor(4 ,4 ,
                             60L ,TimeUnit.SECONDS ,new ArrayBlockingQueue<>(1000))));
     
-            XNode<MyRuleContent> startNode = new XNode<>(new EmptyXRule<>("开始"));
-            XNode<MyRuleContent> endNode = new XNode<>(new EmptyXRule<>("结束"));
+            XNode<MyRuleContent> startNode = new XNode<>(new EmptyXRule<>("START"));
+            XNode<MyRuleContent> endNode = new XNode<>(new EmptyXRule<>("EMD"));
     
             //初始化规则对象
             XNode<MyRuleContent> rule1 = new XNode(new MockRule().setName("1").setExecuteMS(100));
@@ -80,27 +90,27 @@
 
 日志
 ```text
-[DEBUG] 20:33:53,252 [main] 规则【开始】已就绪，等待执行
-[DEBUG] 20:33:53,275 [pool-1-thread-1] 规则【开始】开始执行
-[DEBUG] 20:33:53,278 [pool-1-thread-1] 规则【开始】执行成功，耗时1毫秒
-[DEBUG] 20:33:53,278 [pool-1-thread-1] 规则【Rule1()】已就绪，等待执行
-[DEBUG] 20:33:53,279 [pool-1-thread-2] 规则【Rule1()】开始执行
-[DEBUG] 20:33:53,387 [pool-1-thread-2] 规则【Rule1()】执行成功，耗时108毫秒
-[DEBUG] 20:33:53,387 [pool-1-thread-2] 规则【Rule3()】已就绪，等待执行
-[DEBUG] 20:33:53,387 [pool-1-thread-2] 规则【Rule2()】已就绪，等待执行
-[DEBUG] 20:33:53,387 [pool-1-thread-3] 规则【Rule3()】开始执行
-[DEBUG] 20:33:53,388 [pool-1-thread-4] 规则【Rule2()】开始执行
-[DEBUG] 20:33:53,499 [pool-1-thread-3] 规则【Rule3()】执行成功，耗时112毫秒
-[DEBUG] 20:33:53,499 [pool-1-thread-3] 规则【Rule4()】已就绪，等待执行
-[DEBUG] 20:33:53,499 [pool-1-thread-3] 规则【Rule4()】开始执行
-[DEBUG] 20:33:53,594 [pool-1-thread-4] 规则【Rule2()】执行成功，耗时206毫秒
-[DEBUG] 20:33:53,703 [pool-1-thread-3] 规则【Rule4()】执行成功，耗时204毫秒
-[DEBUG] 20:33:53,703 [pool-1-thread-3] 规则【Rule5()】已就绪，等待执行
-[DEBUG] 20:33:53,704 [pool-1-thread-3] 规则【Rule5()】开始执行
-[DEBUG] 20:33:53,813 [pool-1-thread-3] 规则【Rule5()】执行成功，耗时109毫秒
-[DEBUG] 20:33:53,813 [pool-1-thread-3] 规则【结束】已就绪，等待执行
-[DEBUG] 20:33:53,813 [pool-1-thread-3] 规则【结束】开始执行
-[DEBUG] 20:33:53,813 [pool-1-thread-3] 规则【结束】执行成功，耗时0毫秒
+[DEBUG] 16:09:16,878 [main] 规则【START】已就绪，等待执行
+[DEBUG] 16:09:16,889 [pool-1-thread-1] 规则【START】开始执行
+[DEBUG] 16:09:16,891 [pool-1-thread-1] 规则【START】执行成功，耗时1毫秒
+[DEBUG] 16:09:16,891 [pool-1-thread-1] 规则【1】已就绪，等待执行
+[DEBUG] 16:09:16,892 [pool-1-thread-2] 规则【1】开始执行
+[DEBUG] 16:09:16,992 [pool-1-thread-2] 规则【1】执行成功，耗时100毫秒
+[DEBUG] 16:09:16,992 [pool-1-thread-2] 规则【2】已就绪，等待执行
+[DEBUG] 16:09:16,992 [pool-1-thread-2] 规则【3】已就绪，等待执行
+[DEBUG] 16:09:16,993 [pool-1-thread-3] 规则【2】开始执行
+[DEBUG] 16:09:16,993 [pool-1-thread-4] 规则【3】开始执行
+[DEBUG] 16:09:17,103 [pool-1-thread-4] 规则【3】执行成功，耗时110毫秒
+[DEBUG] 16:09:17,103 [pool-1-thread-4] 规则【4】已就绪，等待执行
+[DEBUG] 16:09:17,103 [pool-1-thread-4] 规则【4】开始执行
+[DEBUG] 16:09:17,194 [pool-1-thread-3] 规则【2】执行成功，耗时201毫秒
+[DEBUG] 16:09:17,304 [pool-1-thread-4] 规则【4】执行成功，耗时201毫秒
+[DEBUG] 16:09:17,304 [pool-1-thread-4] 规则【5】已就绪，等待执行
+[DEBUG] 16:09:17,304 [pool-1-thread-4] 规则【5】开始执行
+[DEBUG] 16:09:17,412 [pool-1-thread-4] 规则【5】执行成功，耗时108毫秒
+[DEBUG] 16:09:17,412 [pool-1-thread-4] 规则【END】已就绪，等待执行
+[DEBUG] 16:09:17,413 [pool-1-thread-4] 规则【END】开始执行
+[DEBUG] 16:09:17,413 [pool-1-thread-4] 规则【END】执行成功，耗时0毫秒
 ```
 
 [代码位置](src/test/java/com/github/xengine/demo)

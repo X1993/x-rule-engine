@@ -13,6 +13,11 @@ import java.util.concurrent.*;
  */
 public class Demo {
 
+    //自定义规则上下文
+    @Data
+    class MyRuleContent implements XRuleContent{}
+
+    //自定义规则
     @Data
     @Accessors(chain = true)
     public class MockRule implements XRule<MyRuleContent> {
@@ -22,6 +27,11 @@ public class Demo {
 
         //规则名
         private String name;
+
+        @Override
+        public String name() {
+            return name;
+        }
 
         @Override
         public void execute(MyRuleContent myRuleContent) throws Exception {
@@ -39,8 +49,8 @@ public class Demo {
                 new ExecutorServiceXRuleExecutor(new ThreadPoolExecutor(4 ,4 ,
                         60L ,TimeUnit.SECONDS ,new ArrayBlockingQueue<>(1000))));
 
-        XNode<MyRuleContent> startNode = new XNode<>(new EmptyXRule<>("开始"));
-        XNode<MyRuleContent> endNode = new XNode<>(new EmptyXRule<>("结束"));
+        XNode<MyRuleContent> startNode = new XNode<>(new EmptyXRule<>("START"));
+        XNode<MyRuleContent> endNode = new XNode<>(new EmptyXRule<>("END"));
         
         //初始化规则对象
         XNode<MyRuleContent> rule1 = new XNode(new MockRule().setName("1").setExecuteMS(100));

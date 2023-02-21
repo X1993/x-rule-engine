@@ -31,7 +31,7 @@ public class XNodeUtils {
     }
 
     /**
-     * 环检验
+     * 校验是否有环
      * @return
      */
     public static void validationCycle(List<? extends XNode> nodes)
@@ -96,6 +96,40 @@ public class XNodeUtils {
 
     public static void validationCycle(XNode xNode){
         validationCycle(xNode.getReachableNodes(true ,true));
+    }
+
+    /**
+     * 构建并行规则流
+     * @param xNodes
+     * @param <CONTENT>
+     * @return
+     */
+    public static <CONTENT extends XRuleContent> XNode<CONTENT> buildParallel(XNode<CONTENT> ... xNodes)
+    {
+        XNode<CONTENT> startXNode = new XNode<>(new EmptyXRule<>("START"));
+        XNode<CONTENT> endXNode = new XNode<>(new EmptyXRule<>("END"));
+        startXNode.addPostNode(xNodes);
+        endXNode.addPreNode(xNodes);
+        return startXNode;
+    }
+
+    /**
+     * 构建串行规则流
+     * @param xNodes
+     * @param <CONTENT>
+     * @return
+     */
+    public static <CONTENT extends XRuleContent> XNode<CONTENT> buildSerial(XNode<CONTENT> ... xNodes)
+    {
+        XNode<CONTENT> startXNode = new XNode<>(new EmptyXRule<>("START"));
+        XNode<CONTENT> endXNode = new XNode<>(new EmptyXRule<>("END"));
+        XNode<CONTENT> beforeNode = startXNode;
+        for (XNode<CONTENT> xNode : xNodes) {
+            beforeNode.addPostNode(xNode);
+            beforeNode = xNode;
+        }
+        beforeNode.addPostNode(endXNode);
+        return startXNode;
     }
 
 }
