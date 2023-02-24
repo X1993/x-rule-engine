@@ -11,11 +11,7 @@
 
     <modules>
         <module>x-rule-engine-core</module>
+        <module>x-rule-engine-client-demo</module>
     </modules>
-
-    <properties>
-        <maven.compiler.source>8</maven.compiler.source>
-        <maven.compiler.target>8</maven.compiler.target>
-    </properties>
 
 </project>

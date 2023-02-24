@@ -20,12 +20,25 @@ import java.util.concurrent.Future;
 public class XNodeContent {
 
     /**
-     * 规则执行的开始时间
+     * 节点创建时间
      */
-    LocalDateTime startTime;
+    LocalDateTime createTime = LocalDateTime.now();
 
     /**
-     * 规则执行的结束时间
+     * 就绪时间
+     * @see XRuleStatus#READY
+     */
+    LocalDateTime readyTime;
+
+    /**
+     * 规则执行时间
+     * @see XRuleStatus#EXECUTING
+     */
+    LocalDateTime executeTime;
+
+    /**
+     * 规则执行结束时间
+     * @see XRuleStatus#isFinal()
      */
     LocalDateTime endTime;
 
@@ -48,8 +61,26 @@ public class XNodeContent {
      * 规则执行时间
      * @return
      */
-    public long getDuration(ChronoUnit chronoUnit){
-        return startTime.until(endTime == null ? LocalDateTime.now() : endTime ,chronoUnit);
+    public long getExeDuration(ChronoUnit chronoUnit){
+        if (executeTime == null){
+            return 0;
+        }
+        return executeTime.until(getNowIfNull(endTime) ,chronoUnit);
+    }
+
+    /**
+     * 规则就绪时间
+     * @return
+     */
+    public long getReadyDuration(ChronoUnit chronoUnit){
+        if (readyTime == null){
+            return 0;
+        }
+        return readyTime.until(getNowIfNull(executeTime) ,chronoUnit);
+    }
+
+    private LocalDateTime getNowIfNull(LocalDateTime localDateTime){
+        return localDateTime == null ? LocalDateTime.now() : localDateTime;
     }
 
 }

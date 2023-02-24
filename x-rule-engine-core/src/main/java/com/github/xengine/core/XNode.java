@@ -39,7 +39,6 @@ public class XNode<CONTENT extends XRuleContent> {
      */
     final XNodeContent nodeContent = new XNodeContent();
 
-
     public XNode(XRule<CONTENT> rule) {
         this.rule = rule;
     }
@@ -79,7 +78,7 @@ public class XNode<CONTENT extends XRuleContent> {
     }
 
     /**
-     * 规则就绪
+     * 就绪
      * @return
      */
     public boolean ready()
@@ -87,6 +86,7 @@ public class XNode<CONTENT extends XRuleContent> {
         synchronized (nodeContent) {
             if (getRuleStatus() == XRuleStatus.WAIT) {
                 nodeContent.setRuleStatus(XRuleStatus.READY);
+                nodeContent.setReadyTime(LocalDateTime.now());
                 return true;
             }
             return false;
@@ -94,7 +94,7 @@ public class XNode<CONTENT extends XRuleContent> {
     }
 
     /**
-     * 规则开始执行
+     * 开始执行
      * @return
      */
     public boolean executing()
@@ -103,46 +103,19 @@ public class XNode<CONTENT extends XRuleContent> {
             XRuleStatus ruleStatus = getRuleStatus();
             if (ruleStatus == XRuleStatus.WAIT || ruleStatus == XRuleStatus.READY) {
                 nodeContent.setRuleStatus(XRuleStatus.EXECUTING);
-                nodeContent.setStartTime(LocalDateTime.now());
+                nodeContent.setExecuteTime(LocalDateTime.now());
                 return true;
             }
             return false;
         }
     }
 
-    public boolean complete(){
-        return end(XRuleStatus.COMPLETE ,null);
-    }
-
-    public boolean intercept(){
-        return end(XRuleStatus.INTERCEPT ,null);
-    }
-
-    public boolean exception(Exception e ,boolean cancelIfUndone){
-        boolean result = end(XRuleStatus.EXCEPTION, e);
-        if (result && cancelIfUndone){
-            cancelIfUndone();
-        }
-        return result;
-    }
-
-    private void cancelIfUndone(){
-        //如果有进行中的规则发送中断通知
-        List<XNode<CONTENT>> nodes = getReachableNodes(true, true);
-        for (XNode<CONTENT> xNode : nodes) {
-            Future ruleFuture = nodeContent.getRuleFuture();
-            if (ruleFuture != null && !ruleFuture.isDone()){
-                //                            log.debug("中断规则【{}】" ,xNode.getRule().name());
-                ruleFuture.cancel(true);
-            }
-        }
-    }
-
-    public boolean cancel(){
-        return end(XRuleStatus.CANCEL ,null);
-    }
-
-    //规则执行结束
+    /**
+     * 结束
+     * @param finalRuleStatus 结束状态
+     * @param e 执行异常，如果有的话
+     * @return
+     */
     private boolean end(XRuleStatus finalRuleStatus ,Exception e)
     {
         if (!finalRuleStatus.isFinal()){
@@ -160,6 +133,38 @@ public class XNode<CONTENT extends XRuleContent> {
             nodeContent.setEndTime(LocalDateTime.now());
             return true;
         }
+    }
+
+    public boolean complete(){
+        return end(XRuleStatus.COMPLETE ,null);
+    }
+
+    public boolean intercept(){
+        return end(XRuleStatus.INTERCEPT ,null);
+    }
+
+    public boolean exception(Exception e ,boolean tryCancelOtherExecutingNode){
+        boolean result = end(XRuleStatus.EXCEPTION, e);
+        if (result && tryCancelOtherExecutingNode){
+            tryCancelOtherExecutingNode();
+        }
+        return result;
+    }
+
+    private void tryCancelOtherExecutingNode(){
+        //如果有进行中的规则发送中断通知
+        List<XNode<CONTENT>> nodes = getReachableNodes(true, true);
+        for (XNode<CONTENT> xNode : nodes) {
+            Future ruleFuture = xNode.nodeContent.getRuleFuture();
+            if (ruleFuture != null && !ruleFuture.isDone()) {
+                //log.debug("中断规则【{}】" ,xNode.getRule().name());
+                ruleFuture.cancel(true);
+            }
+        }
+    }
+
+    public boolean cancel(){
+        return end(XRuleStatus.CANCEL ,null);
     }
 
     public XNode<CONTENT> setRuleFuture(Future<Void> ruleFuture){
@@ -200,11 +205,19 @@ public class XNode<CONTENT extends XRuleContent> {
     }
 
     /**
-     * 获取规则执行时间，未完成取当前执行时间
+     * 获取规则执行时间，未结束取当前执行时间
      * @return
      */
-    public long getDuration(ChronoUnit chronoUnit){
-        return nodeContent.getDuration(chronoUnit);
+    public long getExecuteDuration(ChronoUnit chronoUnit){
+        return nodeContent.getExeDuration(chronoUnit);
+    }
+
+    /**
+     * 获取规则就绪时间，未开始执行取当前执行时间
+     * @return
+     */
+    public long getReadyDuration(ChronoUnit chronoUnit){
+        return nodeContent.getReadyDuration(chronoUnit);
     }
 
     /**
@@ -273,7 +286,7 @@ public class XNode<CONTENT extends XRuleContent> {
     }
 
     public LocalDateTime getStartTime(){
-        return nodeContent.getStartTime();
+        return nodeContent.getExecuteTime();
     }
 
     public LocalDateTime getEndTime(){

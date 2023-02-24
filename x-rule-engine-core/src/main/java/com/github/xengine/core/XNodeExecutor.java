@@ -11,7 +11,7 @@ import java.util.concurrent.Future;
 public interface XNodeExecutor {
 
     /**
-     * 执行规则链
+     * 根据规则的依赖顺序执行
      * @param startNode
      * @param ruleContent
      * @return
