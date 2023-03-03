@@ -8,7 +8,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * 默认的规则节点执行器
+ * 规则节点调度执行器
  * @author X1993
  * @date 2023/2/10
  * @description
@@ -16,12 +16,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 @Slf4j
 public class DefaultXNodeExecutor implements XNodeExecutor {
 
+    private static final ScheduledExecutorService TIMEOUT_SCHEDULER = Executors
+            .newScheduledThreadPool(1 ,new DefaultThreadFactory());
+
     private final XRuleExecutor xRuleExecutor;
 
     private final XEngineProperties xEngineProperties;
-
-    private static final ScheduledExecutorService TIMEOUT_SCHEDULER = Executors
-            .newScheduledThreadPool(1 ,new DefaultThreadFactory());
 
     public DefaultXNodeExecutor(XRuleExecutor xRuleExecutor, XEngineProperties xEngineProperties) {
         this.xRuleExecutor = xRuleExecutor;
@@ -57,13 +57,12 @@ public class DefaultXNodeExecutor implements XNodeExecutor {
             return;
         }
 
-        if (!xNode.ready()){
-            //确保每个节点只有一个线程可以执行后续操作
+        if (!xNode.ready()){//确保每个节点只有一个线程可以执行后续操作
             return;
         }
 
         String ruleName = xNode.getRule().name();
-        log.debug("规则【{}】已就绪，等待执行" ,ruleName);
+        log.debug("规则【{}】已就绪，提交规则执行器" ,ruleName);
         
         Future<Void> ruleFuture = xRuleExecutor.exe(xNode.getRule(), content,
                 new XRuleExecutor.Callback() {
@@ -81,10 +80,9 @@ public class DefaultXNodeExecutor implements XNodeExecutor {
                         }
                         long readyDurationMS = xNode.getReadyDuration(ChronoUnit.MILLIS);
                         if (readyDurationMS > xEngineProperties.getReadyTimeoutWarnMS()){
-                            log.warn("规则【{}】就绪时间达到{}毫秒，资源紧张，考虑对{}性能优化" ,
-                                    ruleName ,readyDurationMS ,xRuleExecutor);
+                            log.warn("规则【{}】就绪时间长达{}毫秒" ,ruleName ,readyDurationMS);
                         }
-                        executeTimeoutCallback(xNode ,taskFuture);
+                        registerTimeoutCallback(xNode ,taskFuture);
                         return true;
                     }
 
@@ -128,8 +126,8 @@ public class DefaultXNodeExecutor implements XNodeExecutor {
         xNode.setRuleFuture(ruleFuture);
     }
 
-    //规则执行超时回调
-    private void executeTimeoutCallback(XNode xNode ,CompletableFuture taskFuture)
+    //注册超时回调
+    private void registerTimeoutCallback(XNode xNode ,CompletableFuture taskFuture)
     {
         long ruleTimeoutMS = xNode.getRule().timeoutMS() > 0 ?
                 xNode.getRule().timeoutMS() : xEngineProperties.getDefaultRuleExeTimeoutMS();

@@ -16,6 +16,6 @@ public interface XNodeExecutor {
      * @param ruleContent
      * @return
      */
-    <CONTENT extends XRuleContent> Future<CONTENT> exe(XNode<CONTENT> startNode , CONTENT ruleContent);
+    <CONTENT extends XRuleContent> Future<CONTENT> exe(XNode<CONTENT> startNode ,CONTENT ruleContent);
 
 }

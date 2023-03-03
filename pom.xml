@@ -11,7 +11,7 @@
 
     <modules>
         <module>x-rule-engine-core</module>
-        <module>x-rule-engine-client-demo</module>
+<!--        <module>x-rule-engine-distributed-demo</module>-->
     </modules>
 
 </project>
